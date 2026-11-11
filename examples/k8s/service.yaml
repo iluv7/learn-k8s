@@ -1,0 +1,17 @@
+# 稳定的集群内部入口：通过标签选择后端 Pod。
+# 就绪状态会通过 EndpointSlice 反映到流量后端，常规新连接不会选择未就绪的 Pod。
+# Service 不绑定单个节点；后端 Pod 可以分布在不同节点上。
+apiVersion: v1
+kind: Service
+metadata:
+  name: java
+  namespace: learn
+spec:
+  type: ClusterIP # 分配集群内部虚拟 IP，不直接提供外部访问入口。
+  # 对应 Deployment 模板中的 app: java。
+  selector:
+    app: java
+  ports:
+    - name: http
+      port: 80 # 客户端访问 Service 的端口。
+      targetPort: http # 指向 Pod 中名为 http 的端口，即 8080。

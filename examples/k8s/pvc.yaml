@@ -1,0 +1,18 @@
+# 持久存储申请：Deployment 的 volumes 引用此 PVC。
+# 三个 Pod 可能跨节点运行，因此示例申请支持多节点读写的 RWX 共享存储。
+# shared-rwx 必须替换为实际存在且支持 RWX 的 StorageClass；声明本身不会创造共享能力。
+# 存储可动态供应，某些存储类会等 Pod 选定节点后再绑定。
+# Pod 删除不会自动删除这个 PVC；删除 PVC 后的数据处理取决于 PV 回收策略。
+# 三个副本跨节点共享文件，需要支持 RWX 的实际存储类。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: java-data
+  namespace: learn
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: shared-rwx
+  resources:
+    requests:
+      storage: 10Gi # 申请容量；不是容器内目录的名字。

@@ -1,0 +1,6 @@
+/learn-k8s
+*.test
+coverage.out
+
+.idea/
+.DS_Store

@@ -1,0 +1,25 @@
+# 水平扩缩容：观察 CPU 指标，通过 scale 子资源调整 Deployment 副本数。
+# 需要 metrics.k8s.io 指标接口，通常由 Metrics Server 提供。
+# HPA 不直接创建 Pod，也不增加节点；后续工作由原有控制器和调度器完成。
+# 真实 HPA 还包含缺失指标处理、容忍区间与稳定窗口。
+# 需要 metrics.k8s.io 指标接口，通常由 Metrics Server 提供。
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: java
+  namespace: learn
+spec:
+  # 目标为同空间的 Deployment/java。
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: java
+  minReplicas: 3 # 缩容下限。
+  maxReplicas: 10 # 扩容上限；节点资源不足时新 Pod 仍可能 Pending。
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60 # 相对 requests 的 60%，本例约为每 Pod 300m。

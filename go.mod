@@ -1,0 +1,3 @@
+module example.com/learn-k8s
+
+go 1.22

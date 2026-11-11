@@ -1,0 +1,7 @@
+# 命名空间：先创建 learn，再提交其他文件中的资源。
+# Namespace 是资源分组，不是节点分组，也不会默认隔离网络。
+# 真实 Kubernetes 示例；镜像、存储类、IngressClass 和域名需按环境替换。
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: learn # 其他资源的 metadata.namespace 必须与这里对应。

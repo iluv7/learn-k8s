@@ -1,0 +1,16 @@
+{
+  "name": "java",
+  "image": "example/java-service:1.0",
+  "replicas": 3,
+  "cpu": 500,
+  "memory": 256,
+  "restartPolicy": "Always",
+  "probes": {
+    "readiness": "/ready",
+    "liveness": "/health"
+  },
+  "namespace": "learn",
+  "configMap": "java-config",
+  "secret": "java-secret",
+  "pvc": "java-data"
+}

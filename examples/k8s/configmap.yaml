@@ -1,0 +1,15 @@
+# 普通配置：Deployment 的 envFrom.configMapRef 按名字引用。
+# 键名成为环境变量名，值使用字符串；应用需要主动读取这些变量。
+# 更新后不会自动改变已运行容器的环境变量，需要重建 Pod。
+# 普通配置：注入 Java 容器的环境变量。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: java-config
+  namespace: learn
+# envFrom 会把下面三个键全部注入容器。
+data:
+  LOG_LEVEL: "INFO"
+  # 示例不部署数据库，需要替换为可连接的数据库地址。
+  DB_URL: "jdbc:postgresql://db.example.com:5432/app"
+  UPLOAD_DIR: "/app/uploads"

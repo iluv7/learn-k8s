@@ -1,0 +1,73 @@
+# Java 部署：声明副本数，并在 template 中完整描述每个 Pod。
+# 依赖同一 Namespace 内的 java-config、java-secret、java-data。
+# 镜像必须实际存在，应用监听 8080、提供 /health 和 /ready，并能写入挂载目录。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java
+  namespace: learn
+spec:
+  replicas: 3 # 首次部署的副本数；HPA 接管后避免反复覆盖此字段。
+  # Deployment 用这些标签关联它管理的 Pod；需匹配模板标签。
+  selector:
+    matchLabels:
+      app: java
+  # 以下是 Pod 模板：资源、探针、挂载配置最终都属于这个模板。
+  template:
+    metadata:
+      labels:
+        app: java
+    spec:
+      containers:
+        - name: java
+          image: example/java-service:1.0 # 替换为实际 Java 镜像。
+          # 声明端口并命名为 http，不会替应用启动监听，也不会直接对外开放。
+          ports:
+            - name: http
+              containerPort: 8080
+          # ConfigMap 提供普通配置，Secret 提供密码；同名键由后面的来源覆盖。
+          envFrom:
+            - configMapRef:
+                name: java-config
+            - secretRef:
+                name: java-secret
+          # requests 用于调度预算；limits 用于容器运行时资源约束。
+          resources:
+            requests:
+              cpu: "500m" # 0.5 核；HPA 的利用率以此为基准。
+              memory: "512Mi"
+            limits:
+              cpu: "1" # CPU 上限 1 核，超额使用通常受限流。
+              memory: "1Gi" # 超过内存上限可能被 OOM 终止。
+          # 启动探针成功后才开始执行存活和就绪探针。
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60 # 允许较长启动时间，约 5 × 60 秒的量级。
+          # 存活探针：连续失败达到阈值，kubelet 触发容器重启。
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          # 就绪探针：失败后停止接收正常 Service 流量，本身不重启容器。
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          # 容器视角：把名为 uploads 的卷挂到应用读写目录。
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+      # Pod 视角：定义 uploads 卷的数据来源。名称须匹配上面的 volumeMounts。
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: java-data # 引用 pvc.yaml 中的 PVC，要求同一 Namespace。

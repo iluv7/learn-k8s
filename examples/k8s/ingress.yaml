@@ -1,0 +1,22 @@
+# HTTP 路由规则：将域名和路径关联到 java Service。
+# 必须安装对应的 Ingress Controller；创建此资源不会自动安装控制器或创建 DNS。
+# 域名应解析到 Controller 的外部入口；本例没有配置 HTTPS/TLS。
+# Controller 也可能直接代理到 Service 对应的 Pod 地址。
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: java
+  namespace: learn
+spec:
+  ingressClassName: nginx # 替换为集群已有的 IngressClass。
+  rules:
+    - host: java.example.com # 匹配 HTTP 请求的 Host。
+      http:
+        paths:
+          - path: /
+            pathType: Prefix # 按路径段匹配前缀；/ 匹配所有路径。
+            backend:
+              service:
+                name: java # 引用同空间的 Service，不是 Deployment 或 Pod 名。
+                port:
+                  number: 80 # 对应 Service.port，不是容器的 8080。
