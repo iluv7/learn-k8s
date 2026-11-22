@@ -60,3 +60,13 @@ kubectl get pods,svc,ingress,pvc,hpa -n learn
 ```
 
 Go 模拟程序读取 JSON，不解析这些 YAML；YAML 用于对照学习及在准备好的真实集群中部署。
+
+## MySQL Operator 最小例子
+
+`examples/mysql-operator/` 用内存模拟一主二副本：CR 声明 → Operator 初始化 → MySQL 选新主 → Router 切换连接 → kubelet 重启旧主 → Operator 协调同步、重新加入。
+
+```bash
+go run ./examples/mysql-operator
+```
+
+CRD 只负责注册资源格式，例子用 Go 结构体表示 CR，不实现真实 CRD 注册或 MySQL 协议。选举和数据同步均为职责演示，不是生产算法；Service 地址保持不变，也不修改 Ingress。
