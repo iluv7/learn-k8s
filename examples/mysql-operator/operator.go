@@ -22,27 +22,28 @@ func (o *Operator) Reconcile() {
 		return
 	} // 先等 K8s 将实例启动。
 	if o.DB.Primary == "" {
-		// 只允许首次引导；已建集群失去主库时由数据库选举，不能随意重新初始化。
-		initialized := false
+		// 首次引导和全故障恢复分开：已初始化过的集群必须等待确认恢复。
+		if o.DB.Initialized {
+			o.API.Primary = ""
+			fmt.Println("Operator: 集群已初始化，等待数据库显式恢复主库")
+			return
+		}
 		for _, m := range o.DB.Members {
-			if m.Joined {
-				initialized = true
-			}
 			if !m.Running {
 				return
 			}
 		}
-		if initialized {
-			return
-		}
+
 		o.DB.Primary = o.DB.Members[0].Name
 		for _, m := range o.DB.Members {
 			m.Joined = true
 		}
+		o.DB.Initialized = true
 		fmt.Println("Operator: 初始化复制集群")
 	}
 	primary := o.DB.PrimaryMember()
 	if primary == nil || !primary.Running || !primary.Joined {
+		o.API.Primary = ""
 		return
 	}
 	for _, m := range o.DB.Members {

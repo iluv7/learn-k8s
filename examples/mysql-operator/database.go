@@ -9,8 +9,10 @@ type Member struct {
 }
 
 type Database struct {
-	Members []*Member
-	Primary string
+	// 独立记录初始化历史，不随成员退出或 Operator 重启而清空。
+	Initialized bool
+	Members     []*Member
+	Primary     string
 }
 
 func (db *Database) PrimaryMember() *Member {

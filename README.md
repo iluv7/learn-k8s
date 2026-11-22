@@ -100,3 +100,5 @@ go test ./examples/mysql-operator
 为保持无第三方依赖，两个 `.yaml` 文件使用 JSON 形式（合法的 YAML），由标准库解析；示例内嵌文件并模拟提交，不连接真实 API Server。使用独立的 `demo.learn-k8s.io` API 组，避免与官方 MySQL Operator 混淆。
 
 此例固定一主二副本，手动多轮调用 `Reconcile` 代替 watch/队列；只解释 schema 中本例用到的字段，工作负载和数据库状态均保存在内存。选举、复制和启动均为职责模拟，不是生产算法或真实 Operator，不修改 Ingress。
+
+全成员故障后，即使容器都已重启，Operator 也会等待数据库显式恢复主库，不重新初始化或开放写入口；确认主库后再协调其他成员追赶数据、重新加入。初始化历史保存在模拟数据库状态中，Operator 对象重建不会清空它（进程退出后仍不持久化）。
