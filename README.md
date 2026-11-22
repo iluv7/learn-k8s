@@ -61,12 +61,42 @@ kubectl get pods,svc,ingress,pvc,hpa -n learn
 
 Go 模拟程序读取 JSON，不解析这些 YAML；YAML 用于对照学习及在准备好的真实集群中部署。
 
-## MySQL Operator 最小例子
+## MySQL Operator 完整最小例子
 
-`examples/mysql-operator/` 用内存模拟一主二副本：CR 声明 → Operator 初始化 → MySQL 选新主 → Router 切换连接 → kubelet 重启旧主 → Operator 协调同步、重新加入。
+`examples/mysql-operator/` 演示完整链路：
+
+```text
+crd.yaml 定义资源类型
+    ↓ 模拟 kubectl 提交
+API Server 注册类型
+    ↓ 提交 cluster.yaml 中的 CR
+API Server 校验 schema 并保存
+    ↓ Operator 观察 CR
+创建 StatefulSet、Router Deployment、Service 的模拟资源
+    ↓ K8s 模拟启动实例
+Operator 初始化 MySQL 复制集群
+    ↓ 主库故障
+MySQL 选新主 → Router 切换连接
+    ↓ kubelet 重启旧主
+Operator 协调 MySQL 同步数据并重新加入
+```
 
 ```bash
 go run ./examples/mysql-operator
+go test ./examples/mysql-operator
 ```
 
-CRD 只负责注册资源格式，例子用 Go 结构体表示 CR，不实现真实 CRD 注册或 MySQL 协议。选举和数据同步均为职责演示，不是生产算法；Service 地址保持不变，也不修改 Ingress。
+| 文件 | 核心逻辑 |
+|---|---|
+| `crd.yaml` | 示例 CRD，schema 将实例数限定为 3 |
+| `cluster.yaml` | 声明 orders-db 集群 |
+| `main.go` | 模拟 kubectl 提交文件，串起部署与故障场景 |
+| `api.go` | 注册类型、校验和保存 CR、记录工作负载，模拟 K8s 启动 |
+| `operator.go` | 观察 CR、创建资源、初始化数据库、协调恢复及上报状态 |
+| `database.go` | 模拟成员、选主和容器重启 |
+| `router.go` | 读取数据库角色并更新连接目标 |
+| `main_test.go` | 校验注册顺序、非法 CR、资源创建、故障切换和恢复 |
+
+为保持无第三方依赖，两个 `.yaml` 文件使用 JSON 形式（合法的 YAML），由标准库解析；示例内嵌文件并模拟提交，不连接真实 API Server。使用独立的 `demo.learn-k8s.io` API 组，避免与官方 MySQL Operator 混淆。
+
+此例固定一主二副本，手动多轮调用 `Reconcile` 代替 watch/队列；只解释 schema 中本例用到的字段，工作负载和数据库状态均保存在内存。选举、复制和启动均为职责模拟，不是生产算法或真实 Operator，不修改 Ingress。

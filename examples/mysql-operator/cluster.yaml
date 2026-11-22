@@ -1,0 +1,10 @@
+{
+  "apiVersion": "demo.learn-k8s.io/v1",
+  "kind": "InnoDBCluster",
+  "metadata": {
+    "name": "orders-db"
+  },
+  "spec": {
+    "instances": 3
+  }
+}
